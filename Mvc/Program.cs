@@ -19,6 +19,8 @@ namespace Mvc
 
     public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
         WebHost.CreateDefaultBuilder(args)
-            .UseStartup<Startup>();
+          // Hides the Server Name from the request headers
+          .UseKestrel(options => options.AddServerHeader = false)
+          .UseStartup<Startup>();
   }
 }

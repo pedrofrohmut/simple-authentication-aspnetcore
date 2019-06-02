@@ -35,10 +35,18 @@ namespace Mvc
         options.MinimumSameSitePolicy = SameSiteMode.None;
       });
 
-      services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+      services
+        .AddMvc(options =>
+        {
+          // Validate the Form Token For All actions - with auto to ignore GET Request.
+          options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+          // Require Https For all Request for all Controllers and all their actions.
+          options.Filters.Add(new RequireHttpsAttribute());
+        })
+        .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
-      // each kind of authentication is called scheme
-      // const for string = "Cookie"
+      // each kind of authentication is called scheme.
+      // const for string = "Cookie".
       services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
         .AddCookie(options =>
         {
@@ -67,14 +75,26 @@ namespace Mvc
         app.UseExceptionHandler("/Home/Error");
         // The default HSTS value is 30 days. You may want to change this for 
         // production scenarios, see https://aka.ms/aspnetcore-hsts.
-        app.UseHsts();
+        app.UseHsts(options =>
+        {
+          // The Http Request won't get to your server to be redirect.
+          // The Browser will redirect it before it reaches the server.
+          options.MaxAge(days: 365).IncludeSubdomains();
+        });
       }
 
+      // Redirect Http Requests to Https.
       app.UseHttpsRedirection();
+
       app.UseStaticFiles();
+
       app.UseCookiePolicy();
 
-      // Must be right before UseMvc - using middleware the order matters
+      app.UseXXssProtection(options => options.EnabledWithBlockMode());
+
+      app.UseXContentTypeOptions();
+
+      // Must be right before UseMvc - using middleware the order matters.
       app.UseAuthentication();
 
       app.UseMvc(routes =>
